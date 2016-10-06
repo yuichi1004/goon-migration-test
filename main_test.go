@@ -22,6 +22,7 @@ func TestUpgradeWithCache(t *testing.T) {
 	if err = g.Get(&v1); err != nil {
 		t.Errorf("err: %v", err)
 	}
+	g.FlushLocalCache()
 
 	v2 := EntityV2{ID: 1}
 	if err = g.Get(&v2); err != nil {
@@ -70,6 +71,7 @@ func TestDowngradeWithCache(t *testing.T) {
 	if err = g.Get(&v2); err != nil {
 		t.Errorf("err: %v", err)
 	}
+	g.FlushLocalCache()
 
 	v1 := EntityV1{ID: 1}
 	if err = g.Get(&v1); err != nil {
