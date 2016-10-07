@@ -11,18 +11,22 @@ http://qiita.com/vvakame/items/e017e7d955f82ddd8af1
 
 # 結果
 
-アップグレードでも、ダウングレードでも期待通り動く。
-UT でも本番でも動く。
+アップグレードでも、ダウングレードでもおおむね期待通り動く。
+ただしフィールドが多いデータが Memd にある時にフィールドの少ない struct で Get したときだけこける。
 
 ```
-$ curl 'https://profound-veld-xxxxxx.appspot.com/tests/upgrade?cached=yes'
-Test Passed (cached: true): {_kind: ID:1 Name:}
-$ curl 'https://profound-veld-xxxxxx.appspot.com/tests/upgrade?cached=no'
-Test Passed (cached: false): {_kind: ID:1 Name:}
-$ curl 'https://profound-veld-xxxxxx.appspot.com/tests/downgrade?cached=yes'
-Test Passed (cached: true): {_kind: ID:1}
-$ curl 'https://profound-veld-xxxxxx.appspot.com/tests/downgrade?cached=no'
-Test Passed (cached: false): {_kind: ID:1}
+$ curl 'https://profound-veld-118006.appspot.com/tests/upgrade?cached=no'
+Test Passed (cached: no): {_kind: ID:1 Name:}
+$ curl 'https://profound-veld-118006.appspot.com/tests/upgrade?cached=v1'
+Test Passed (cached: v1): {_kind: ID:1 Name:}
+$ curl 'https://profound-veld-118006.appspot.com/tests/upgrade?cached=v2'
+Test Passed (cached: v2): {_kind: ID:1 Name:}
+$ curl 'https://profound-veld-118006.appspot.com/tests/downgrade?cached=no'
+Test Passed (cached: no): {_kind: ID:1}
+$ curl 'https://profound-veld-118006.appspot.com/tests/downgrade?cached=v1'
+Test Passed (cached: v1): {_kind: ID:1}
+$ curl 'https://profound-veld-118006.appspot.com/tests/downgrade?cached=v2'
+err: goon: Could not find field name%
 ```
 
 ```

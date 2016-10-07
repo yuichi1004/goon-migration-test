@@ -2,6 +2,7 @@ package migrationtest
 
 import (
 	"fmt"
+	"golang.org/x/net/context"
 	"net/http"
 
 	"github.com/mjibson/goon"
@@ -14,8 +15,31 @@ func init() {
 	http.HandleFunc("/tests/downgrade", downgradeHandler)
 }
 
+func setCache(ctx context.Context, g *goon.Goon, ver string) error {
+	var err error
+	switch ver {
+	case "v1":
+		err = g.Get(&EntityV1{ID: 1})
+	case "v2":
+		err = g.Get(&EntityV2{ID: 1})
+	case "no":
+		memcache.Flush(ctx)
+	default:
+		err = fmt.Errorf("unknown version: %s\n", ver)
+		memcache.Flush(ctx)
+	}
+	g.FlushLocalCache()
+	return err
+}
+
 func upgradeHandler(w http.ResponseWriter, r *http.Request) {
-	withCache := "yes" == r.URL.Query().Get("cached")
+	defer func() {
+		if rv := recover(); rv != nil {
+			fmt.Fprintf(w, "panic! %v\n", rv)
+		}
+	}()
+
+	cv := r.URL.Query().Get("cached")
 
 	g := goon.NewGoon(r)
 	ctx := appengine.NewContext(r)
@@ -23,40 +47,42 @@ func upgradeHandler(w http.ResponseWriter, r *http.Request) {
 
 	v1 := EntityV1{ID: 1}
 	g.Put(&v1)
-
-	if err := g.Get(&v1); err != nil {
-		fmt.Fprintf(w, "err: %v", err)
-		return
-	}
 	g.FlushLocalCache()
-	if !withCache {
-		memcache.Flush(ctx)
+
+	if err := setCache(ctx, g, cv); err != nil {
+		fmt.Fprintf(w, "err: %v\n", err)
+		return
 	}
 
 	v2 := EntityV2{ID: 1}
 	if err := g.Get(&v2); err != nil {
-		fmt.Fprint(w, "err: %v", err)
+		fmt.Fprint(w, "err: %v\n", err)
 		return
 	}
 
-	fmt.Fprintf(w, "Test Passed (cached: %v): %+v", withCache, v2)
+	fmt.Fprintf(w, "Test Passed (cached: %v): %+v\n", cv, v2)
 }
 
 func downgradeHandler(w http.ResponseWriter, r *http.Request) {
-	withCache := "yes" == r.URL.Query().Get("cached")
+	defer func() {
+		if rv := recover(); rv != nil {
+			fmt.Fprintf(w, "panic! %v\n", rv)
+		}
+	}()
 
+	cv := r.URL.Query().Get("cached")
+
+	g := goon.NewGoon(r)
 	ctx := appengine.NewContext(r)
-	v2 := EntityV2{ID: 1, Name: "Mike"}
-	g := goon.FromContext(ctx)
-	g.Put(&v2)
+	memcache.Flush(ctx)
 
-	if err := g.Get(&v2); err != nil {
-		fmt.Fprint(w, "err: %v", err)
-		return
-	}
+	v2 := EntityV2{ID: 1, Name: "Mike"}
+	g.Put(&v2)
 	g.FlushLocalCache()
-	if !withCache {
-		memcache.Flush(ctx)
+
+	if err := setCache(ctx, g, cv); err != nil {
+		fmt.Fprint(w, "err: %v\n", err)
+		return
 	}
 
 	v1 := EntityV1{ID: 1}
@@ -65,5 +91,5 @@ func downgradeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprintf(w, "Test Passed (cached: %v): %+v", withCache, v1)
+	fmt.Fprintf(w, "Test Passed (cached: %v): %+v\n", cv, v1)
 }
