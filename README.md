@@ -12,6 +12,18 @@ http://qiita.com/vvakame/items/e017e7d955f82ddd8af1
 # 結果
 
 アップグレードでも、ダウングレードでも期待通り動く。
+UT でも本番でも動く。
+
+```
+$ curl 'https://profound-veld-xxxxxx.appspot.com/tests/upgrade?cached=yes'
+Test Passed (cached: true): {_kind: ID:1 Name:}
+$ curl 'https://profound-veld-xxxxxx.appspot.com/tests/upgrade?cached=no'
+Test Passed (cached: false): {_kind: ID:1 Name:}
+$ curl 'https://profound-veld-xxxxxx.appspot.com/tests/downgrade?cached=yes'
+Test Passed (cached: true): {_kind: ID:1}
+$ curl 'https://profound-veld-xxxxxx.appspot.com/tests/downgrade?cached=no'
+Test Passed (cached: false): {_kind: ID:1}
+```
 
 ```
 $ goapp test -v                                                                                                                                                                                                                                                                                       [~/repos/GoonMigration]
